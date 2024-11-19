@@ -1,0 +1,40 @@
+:- include('KB.pl').
+
+% Define initial state from KB.pl
+bottle(1, C1, C2, s0) :- bottle1(C1, C2).
+bottle(2, C1, C2, s0) :- bottle2(C1, C2).
+bottle(3, C1, C2, s0) :- bottle3(C1, C2).
+
+% Goal predicate that initiates the IDS from the initial state 's0'
+goal(S) :-
+    ids(s0, 0, S).
+
+% Iterative Deepening Search that increments depth until a goal state is found or no new states are possible
+ids(CurrentState, Depth, GoalState) :-
+    call_with_depth_limit(search_goal(CurrentState, GoalState), Depth, Result),
+    ( Result == depth_limit_exceeded ->
+        NewDepth is Depth + 1,
+        ids(CurrentState, NewDepth, GoalState)
+    ; Result == success ).
+
+% Search for the goal state starting from any given state
+search_goal(State, State) :- goal_conditions(State).
+search_goal(CurrentState, GoalState) :-
+    result(pour(B1, B2), CurrentState, NewState),
+    search_goal(NewState, GoalState).
+
+% Define the action and result of pouring from one bottle into another
+result(pour(B1, B2), Current, NewState) :-
+    B1 \= B2, % Ensure different bottles
+    bottle(B2, C1New, C2New, result(pour(B1, B2), Current)),
+    bottle(B1, C1Src, C2Src, result(pour(B1, B2), Current)),
+    NewState = result(pour(B1, B2), Current).  % Construct new state identifier
+
+% Goal conditions as specified
+goal_conditions(S) :-
+    (bottle(1, e, e, S), bottle(2, C2, C2, S), bottle(3, C3, C3, S), C2 \= C3);
+    (bottle(2, e, e, S), bottle(1, C1, C1, S), bottle(3, C3, C3, S), C1 \= C3);
+    (bottle(3, e, e, S), bottle(1, C1, C1, S), bottle(2, C2, C2, S), C1 \= C2).
+
+% Example query to find a solution
+?- goal(S).
